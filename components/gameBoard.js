@@ -105,14 +105,14 @@ export default class GameBoard extends Component {
     const symbol = this.state.gameState[x][y]
     const { size, winningLength } = this.state
 
-    for (let i = x - winningLength + 1, count = 0; i < x + winningLength - 1 && i < size; i++) {
+    for (let i = x - winningLength + 1, count = 0; i < x + winningLength && i < size; i++) {
       if (i < 0) continue
       if (this.state.gameState[i][y] === symbol) count += 1
       else count = 0
       if (count === winningLength) return true
     }
 
-    for (let i = y - winningLength + 1, count = 0; i < y + winningLength - 1 && i < size; i++) {
+    for (let i = y - winningLength + 1, count = 0; i < y + winningLength && i < size; i++) {
       if (i < 0) continue
       if (this.state.gameState[x][i] === symbol) count += 1
       else count = 0
@@ -121,7 +121,7 @@ export default class GameBoard extends Component {
 
     for (
       let i = x - winningLength + 1, j = y - winningLength + 1, count = 0;
-      i < x + winningLength - 1 && i < size && j < y + winningLength - 1 && j < size;
+      i < x + winningLength && i < size && j < y + winningLength && j < size;
       i++, j++
     ) {
       if (i < 0 || j < 0) continue
@@ -132,7 +132,7 @@ export default class GameBoard extends Component {
 
     for (
       let i = x - winningLength + 1, j = y + winningLength - 1, count = 0;
-      i < x + winningLength - 1 && i < size && j > y - winningLength + 1 && j >= 0;
+      i < x + winningLength && i < size && j > y - winningLength && j >= 0;
       i++, j--
     ) {
       if (i < 0 || j >= size) continue

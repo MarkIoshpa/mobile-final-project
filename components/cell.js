@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Text, TouchableOpacity, Dimensions } from 'react-native'
+import { Text, TouchableOpacity, Image, Dimensions } from 'react-native'
 import propTypes from 'prop-types'
 
 const screenWidth = Math.round(Dimensions.get('window').width)
@@ -17,7 +17,8 @@ export default class Cell extends Component {
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor:
-            this.props.lastMove[0] === this.props.x && this.props.lastMove[1] === this.props.y
+            (this.props.lastMove[0] === this.props.x && this.props.lastMove[1] === this.props.y) ||
+            this.props.winningLine.includes(`${this.props.x}${this.props.y}`)
               ? '#F0F040'
               : '#FFFFFF'
         }}
@@ -31,7 +32,29 @@ export default class Cell extends Component {
         >
           {this.props.cellState}
         </Text>
+        {this.props.winningLine.includes(`${this.props.x}${this.props.y}`) && this.renderLine()}
       </TouchableOpacity>
+    )
+  }
+
+  renderLine() {
+    return (
+      <Image
+        style={{
+          width: screenWidth / this.props.size,
+          height: screenWidth / this.props.size,
+          position: 'absolute'
+        }}
+        source={
+          this.props.lineOrientation === 'horizontal'
+            ? require('../assets/horizontal-line.png')
+            : this.props.lineOrientation === 'vertical'
+            ? require('../assets/vertical-line.png')
+            : this.props.lineOrientation === 'diagonal'
+            ? require('../assets/diagonal-line.png')
+            : require('../assets/diagonalback-line.png')
+        }
+      />
     )
   }
 }
@@ -42,5 +65,7 @@ Cell.propTypes = {
   size: propTypes.number,
   cellState: propTypes.string,
   handlePress: propTypes.func,
-  lastMove: propTypes.array
+  lastMove: propTypes.array,
+  winningLine: propTypes.array,
+  lineOrientation: propTypes.string
 }

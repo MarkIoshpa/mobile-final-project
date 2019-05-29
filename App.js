@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { StyleSheet, View } from 'react-native'
-import GameBoard from './components/gameBoard'
+import Menu from './components/menu'
 
 const styles = StyleSheet.create({
   container: {
@@ -14,7 +14,7 @@ export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <GameBoard size={6} winningLength={4} />
+        <Menu />
       </View>
     )
   }

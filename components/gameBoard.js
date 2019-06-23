@@ -5,7 +5,7 @@ import propTypes from 'prop-types'
 import update from 'immutability-helper'
 import Header from './header'
 import Cell from './cell'
-import Minimax from './AI'
+import Minimax from '../scripts/AI'
 
 const styles = StyleSheet.create({
   container: {
@@ -55,6 +55,7 @@ export default class GameBoard extends Component {
       gameMode: this.props.navigation.state.params.gameMode,
       gameReady: false,
       id: this.props.navigation.state.params.gameId || -1,
+      name: this.props.navigation.state.params.name || '',
       playerTurn: 'X',
       winner: '',
       lastMove: [],
@@ -66,49 +67,54 @@ export default class GameBoard extends Component {
     this.checkVictory = this.checkVictory.bind(this)
     this.updateServer = this.updateServer.bind(this)
     this.computerMove = this.computerMove.bind(this)
+    this.socketEvents = this.socketEvents.bind(this)
 
     if (this.state.gameMode === 'multiplayer') {
       this.socket = socketIO('https://x-o-mobile.herokuapp.com/', {
         transports: ['websocket'],
         jsonp: false
       })
-      this.socket.on('ready', data => {
-        if (data) {
-          this.setState(data.state, () => this.setState({ gameReady: false }))
-          Alert.alert('Game is Ready', 'Wait for player X to make a move!', [{ text: 'Ok' }], {
-            cancelable: false
-          })
-        } else {
-          this.setState({ gameReady: true })
-          Alert.alert('Game is Ready', 'Player O has joined the game!', [{ text: 'Start' }], {
-            cancelable: false
-          })
-        }
-      })
-      this.socket.on('newState', data => {
-        this.setState(data.state, () => {
-          if (this.state.winner === '') this.setState({ gameReady: true })
-        })
-      })
-      this.socket.on('gameUnavailable', () => {
-        const { navigate } = this.props.navigation
-        Alert.alert(
-          'Game is unavailable',
-          'Unable to join game, try to join an other game',
-          [{ text: 'Return', onPress: () => navigate('Home') }],
-          { cancelable: false }
-        )
-      })
-      this.socket.on('opponentDisconnect', () => {
-        const { navigate } = this.props.navigation
-        Alert.alert(
-          'Opponent left the game',
-          'Unable to continue game because opponent disconnected!',
-          [{ text: 'Return', onPress: () => navigate('Home') }],
-          { cancelable: false }
-        )
-      })
+      this.socketEvents()
     }
+  }
+
+  socketEvents() {
+    this.socket.on('ready', data => {
+      if (data) {
+        this.setState(data.state, () => this.setState({ gameReady: false }))
+        Alert.alert('Game is Ready', 'Wait for player X to make a move!', [{ text: 'Ok' }], {
+          cancelable: false
+        })
+      } else {
+        this.setState({ gameReady: true })
+        Alert.alert('Game is Ready', 'Player O has joined the game!', [{ text: 'Start' }], {
+          cancelable: false
+        })
+      }
+    })
+    this.socket.on('newState', data => {
+      this.setState(data.state, () => {
+        if (this.state.winner === '') this.setState({ gameReady: true })
+      })
+    })
+    this.socket.on('gameUnavailable', () => {
+      const { navigate } = this.props.navigation
+      Alert.alert(
+        'Game is unavailable',
+        'Unable to join game, try to join an other game',
+        [{ text: 'Return', onPress: () => navigate('Home') }],
+        { cancelable: false }
+      )
+    })
+    this.socket.on('opponentDisconnect', () => {
+      const { navigate } = this.props.navigation
+      Alert.alert(
+        'Opponent left the game',
+        'Unable to continue game because opponent disconnected!',
+        [{ text: 'Return', onPress: () => navigate('Home') }],
+        { cancelable: false }
+      )
+    })
   }
 
   componentDidMount() {
@@ -376,7 +382,9 @@ export default class GameBoard extends Component {
               'Do you wish to leave the game?',
               [{ text: 'Leave', onPress: () => navigate('Home') }, { text: 'Cancel' }],
               { cancelable: false }
-            )}>
+            )
+          }
+        >
           <Text style={styles.bold}>{this.state.winner === '' ? 'Resign' : 'Back'}</Text>
         </TouchableOpacity>
       </View>

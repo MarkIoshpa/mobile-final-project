@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
 import PropTypes from 'prop-types'
+import DialogInput from 'react-native-dialog-input'
 
 const styles = StyleSheet.create({
   container: {
@@ -100,6 +101,7 @@ export default class Multiplayer extends Component {
     this.state = {
       size: this.props.navigation.state.params.size,
       winningLength: this.props.navigation.state.params.winningLength,
+      isDialogVisible: false,
       games: {}
     }
 
@@ -128,7 +130,7 @@ export default class Multiplayer extends Component {
     if (game.full) return
     return (
       <View style={styles.game} key={`game${key}`}>
-        <Text style={styles.text}>Game {game.state.id}</Text>
+        <Text style={styles.text}>{game.state.name}</Text>
         <Text style={styles.smallText}>
           Size {game.state.size}x{game.state.size}
         </Text>
@@ -160,7 +162,7 @@ export default class Multiplayer extends Component {
         </View>
         <TouchableOpacity
           style={styles.buttonCreate}
-          onPress={() => navigate('GameBoard', { size, winningLength, gameMode: 'multiplayer' })}
+          onPress={() => this.setState({ isDialogVisible: true })}
         >
           <Text style={styles.smallText}>Create</Text>
         </TouchableOpacity>
@@ -171,8 +173,22 @@ export default class Multiplayer extends Component {
           <Text style={styles.smallText}>Back</Text>
         </TouchableOpacity>
         <ScrollView>
-          {Object.keys(this.state.games).map((key, i) => this.renderGame(this.state.games[key], i))}  
+          {Object.keys(this.state.games).map((key, i) => this.renderGame(this.state.games[key], i))}
         </ScrollView>
+        <DialogInput
+          isDialogVisible={this.state.isDialogVisible}
+          title={'Choose Game Name'}
+          message={'This name will be displayed for your game'}
+          hintInput={'Name'}
+          submitInput={name => {
+            this.setState({ isDialogVisible: false }, () =>
+              navigate('GameBoard', { name, size, winningLength, gameMode: 'multiplayer' })
+            )
+          }}
+          closeDialog={() => {
+            this.setState({ isDialogVisible: false })
+          }}
+        />
       </View>
     )
   }

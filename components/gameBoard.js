@@ -1,23 +1,19 @@
 import React, { Component } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native'
-import Cell from './cell'
+import { Alert, StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native'
+import socketIO from 'socket.io-client'
 import propTypes from 'prop-types'
 import update from 'immutability-helper'
+import Header from './header'
+import Cell from './cell'
+import Minimax from './AI'
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    width: Math.round(Dimensions.get('window').width),
+    width: Math.round(Dimensions.get('window').width) + 1,
     backgroundColor: '#202020'
-  },
-  header: {
-    color: '#FFFFFF',
-    fontFamily: 'cursive',
-    fontSize: 40,
-    fontWeight: 'bold',
-    paddingBottom: 30
   },
   board: {
     alignSelf: 'stretch',
@@ -33,12 +29,15 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     position: 'absolute',
-    top: 10,
+    bottom: 10,
     right: 10,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 4
+  },
+  bold: {
+    fontWeight: 'bold'
   }
 })
 
@@ -47,11 +46,15 @@ export default class GameBoard extends Component {
     super(props)
 
     this.state = {
-      size: this.props.size,
-      winningLength: this.props.winningLength,
-      gameState: this.create2DArray(this.props.size, this.props.size),
-      gameReady: true,
-      gameMode: this.props.gameMode,
+      size: this.props.navigation.state.params.size,
+      winningLength: this.props.navigation.state.params.winningLength,
+      gameState: this.create2DArray(
+        this.props.navigation.state.params.size,
+        this.props.navigation.state.params.size
+      ),
+      gameMode: this.props.navigation.state.params.gameMode,
+      gameReady: false,
+      id: this.props.navigation.state.params.gameId || -1,
       playerTurn: 'X',
       winner: '',
       lastMove: [],
@@ -61,9 +64,89 @@ export default class GameBoard extends Component {
 
     this.create2DArray = this.create2DArray.bind(this)
     this.checkVictory = this.checkVictory.bind(this)
+    this.updateServer = this.updateServer.bind(this)
+    this.computerMove = this.computerMove.bind(this)
+
+    if (this.state.gameMode === 'multiplayer') {
+      this.socket = socketIO('https://x-o-mobile.herokuapp.com/', {
+        transports: ['websocket'],
+        jsonp: false
+      })
+      this.socket.on('ready', data => {
+        if (data) {
+          this.setState(data.state, () => this.setState({ gameReady: false }))
+          Alert.alert('Game is Ready', 'Wait for player X to make a move!', [{ text: 'Ok' }], {
+            cancelable: false
+          })
+        } else {
+          this.setState({ gameReady: true })
+          Alert.alert('Game is Ready', 'Player O has joined the game!', [{ text: 'Start' }], {
+            cancelable: false
+          })
+        }
+      })
+      this.socket.on('newState', data => {
+        this.setState(data.state, () => {
+          if (this.state.winner === '') this.setState({ gameReady: true })
+        })
+      })
+      this.socket.on('gameUnavailable', () => {
+        const { navigate } = this.props.navigation
+        Alert.alert(
+          'Game is unavailable',
+          'Unable to join game, try to join an other game',
+          [{ text: 'Return', onPress: () => navigate('Home') }],
+          { cancelable: false }
+        )
+      })
+      this.socket.on('opponentDisconnect', () => {
+        const { navigate } = this.props.navigation
+        Alert.alert(
+          'Opponent left the game',
+          'Unable to continue game because opponent disconnected!',
+          [{ text: 'Return', onPress: () => navigate('Home') }],
+          { cancelable: false }
+        )
+      })
+    }
   }
 
-  createBoard = size => {
+  componentDidMount() {
+    if (this.state.gameMode === 'multiplayer') {
+      this.socket.connect()
+      if (this.state.id === -1)
+        this.socket.on('connect', () => {
+          this.socket.emit('addGame', { state: this.state })
+          this.socket.on('gameId', data => {
+            this.setState({ id: data.id })
+            Alert.alert(
+              'Multiplayer',
+              'Waiting for player to join the game!',
+              [{ text: 'Exit', onPress: () => this.props.navigation.navigate('Home') }],
+              { cancelable: false }
+            )
+          })
+        })
+      else
+        this.socket.on('connect', () => {
+          this.socket.emit('joinGame', { id: this.state.id })
+          this.socket.on('updateGame', data => {
+            this.setState({ state: data.state, gameReady: true })
+          })
+        })
+    } else {
+      this.setState({ gameReady: true })
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.state.gameMode === 'multiplayer') {
+      this.socket.close()
+    }
+  }
+
+  createBoard = (state, onPress) => {
+    const { size, gameState, lastMove, winningLine, lineOrientation } = state
     const board = []
     for (let i = 0; i < size; i++) {
       const rows = []
@@ -74,11 +157,11 @@ export default class GameBoard extends Component {
             x={i}
             y={j}
             size={size}
-            cellState={this.state.gameState[i][j]}
-            handlePress={this.onPress}
-            lastMove={this.state.lastMove}
-            winningLine={this.state.winningLine}
-            lineOrientation={this.state.lineOrientation}
+            cellState={gameState[i][j]}
+            handlePress={onPress}
+            lastMove={lastMove}
+            winningLine={winningLine}
+            lineOrientation={lineOrientation}
           />
         )
       }
@@ -92,29 +175,67 @@ export default class GameBoard extends Component {
   }
 
   onPress = (x, y) => {
-    if (this.state.gameReady) {
-      if (typeof this.state.gameState[x][y] === 'undefined') {
+    const { gameReady, gameState, gameMode, playerTurn } = this.state
+    if (gameReady) {
+      if (gameState[x][y] === 0 || !gameState[x][y]) {
         this.setState(
           {
-            gameState: update(this.state.gameState, {
-              [x]: { [y]: { $set: this.state.playerTurn } }
+            gameState: update(gameState, {
+              [x]: { [y]: { $set: playerTurn } }
             }),
             gameReady: false,
             lastMove: [x, y]
           },
           () => {
-            if (this.checkVictory()) this.setState({ winner: this.state.playerTurn })
-            else if (this.checkDraw()) this.setState({ winner: 'draw' })
-            else
-              this.setState(
-                this.state.playerTurn === 'X'
-                  ? { playerTurn: 'O', gameReady: true }
-                  : { playerTurn: 'X', gameReady: true }
-              )
+            if (this.checkVictory())
+              this.setState({ winner: playerTurn }, () => this.updateServer())
+            else if (this.checkDraw()) this.setState({ winner: 'draw' }, () => this.updateServer())
+            else if (gameMode === 'computer') this.computerMove()
+            else this.changePlayerTurn(playerTurn)
           }
         )
       }
     }
+  }
+
+  computerMove() {
+    const { gameState, size } = this.state
+    const compState = this.create2DArray(size)
+
+    for (let x = 0; x < size; x++)
+      for (let y = 0; y < size; y++)
+        if (gameState[x][y] === 'X') compState[x][y] = -1
+        else if (gameState[x][y] === 'O') compState[x][y] = 1
+        else compState[x][y] = 0
+
+    const move = Minimax(compState, size, 1)
+    const x = move[0]
+    const y = move[1]
+
+    this.setState(
+      {
+        gameState: update(this.state.gameState, {
+          [x]: { [y]: { $set: 'O' } }
+        }),
+        lastMove: [x, y]
+      },
+      () => {
+        if (this.checkVictory()) this.setState({ winner: 'O' })
+        else if (this.checkDraw()) this.setState({ winner: 'draw' })
+        else this.setState({ gameReady: true })
+      }
+    )
+  }
+
+  updateServer() {
+    if (this.state.gameMode === 'multiplayer') this.socket.emit('updateGame', { state: this.state })
+  }
+
+  changePlayerTurn(playerTurn) {
+    this.setState(playerTurn === 'X' ? { playerTurn: 'O' } : { playerTurn: 'X' }, () => {
+      if (this.state.gameMode === 'multiplayer') this.updateServer()
+      else this.setState({ gameReady: true })
+    })
   }
 
   create2DArray(size) {
@@ -154,7 +275,6 @@ export default class GameBoard extends Component {
       i < y + winningLength && i < size;
       i++
     ) {
-      if (i < 0) continue
       if (i < 0) continue
       if (this.state.gameState[x][i] === symbol) {
         count += 1
@@ -219,44 +339,58 @@ export default class GameBoard extends Component {
     return true
   }
 
+  renderTurnText() {
+    return (
+      <Text style={styles.turn}>
+        {this.state.winner !== '' && [
+          this.state.winner === 'X'
+            ? 'Red - X player won the game'
+            : this.state.winner === 'O'
+            ? 'Blue - O player won the game'
+            : 'Game ended in a Draw'
+        ]}
+        {this.state.winner === '' && [
+          this.state.playerTurn === 'X' ? "Red - X player's turn" : "Blue - O player's turn"
+        ]}
+      </Text>
+    )
+  }
+
   render() {
-    const { size } = this.state
+    const { navigate } = this.props.navigation
     return (
       <View style={styles.container}>
-        <Text style={styles.header}>{'X & O'}</Text>
+        <Header />
         <View
-          style={
-            this.state.playerTurn === 'X'
-              ? { borderWidth: 5, borderColor: 'red' }
-              : { borderWidth: 5, borderColor: 'blue' }
-          }
+          style={this.state.playerTurn === 'X' ? this.borderStyle('red') : this.borderStyle('blue')}
         >
-          {this.createBoard(size)}
+          {this.createBoard(this.state, this.onPress)}
         </View>
-        <Text style={styles.turn}>
-          {this.state.winner !== '' && [
-            this.state.winner === 'X'
-              ? 'Red - X player won the game'
-              : this.state.winner === 'Y'
-              ? 'Blue - O player won the game'
-              : 'Game ended in a Draw'
-          ]}
-          {this.state.winner === '' && [
-            this.state.playerTurn === 'X' ? "Red - X player's turn" : "Blue - O player's turn"
-          ]}
-        </Text>
+        {this.renderTurnText()}
         <Text style={styles.turn}>{`Get ${this.state.winningLength} in a row to win`}</Text>
-        <TouchableOpacity style={styles.back} onPress={this.props.handleBack}>
-          <Text style={{ fontWeight: 'bold' }}>{this.state.winner === '' ? 'Resign' : 'Back'}</Text>
+        <TouchableOpacity
+          style={styles.back}
+          onPress={() =>
+            Alert.alert(
+              'Exit Game',
+              'Do you wish to leave the game?',
+              [{ text: 'Leave', onPress: () => navigate('Home') }, { text: 'Cancel' }],
+              { cancelable: false }
+            )}>
+          <Text style={styles.bold}>{this.state.winner === '' ? 'Resign' : 'Back'}</Text>
         </TouchableOpacity>
       </View>
     )
   }
+
+  borderStyle = color => {
+    return {
+      borderWidth: 5,
+      borderColor: color
+    }
+  }
 }
 
 GameBoard.propTypes = {
-  size: propTypes.number,
-  winningLength: propTypes.number,
-  gameMode: propTypes.string,
-  handleBack: propTypes.func
+  navigation: propTypes.object
 }

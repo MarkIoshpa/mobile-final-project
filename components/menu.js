@@ -1,22 +1,15 @@
 import React, { Component } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
-import GameBoard from './gameBoard'
-import Options from './options'
+import PropTypes from 'prop-types'
+import Header from './header'
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    width: Math.round(Dimensions.get('window').width),
+    width: Math.round(Dimensions.get('window').width) + 1,
     backgroundColor: '#202020'
-  },
-  header: {
-    color: '#FFFFFF',
-    fontFamily: 'cursive',
-    fontSize: 40,
-    fontWeight: 'bold',
-    paddingBottom: 60
   },
   button: {
     width: Math.round(Dimensions.get('window').width) / 2,
@@ -38,78 +31,50 @@ export default class Menu extends Component {
     super(props)
     this.state = {
       size: 3,
-      winningLength: 3,
-      gameMode: ''
+      winningLength: 3
     }
   }
   render() {
-    switch (this.state.gameMode) {
-      case 'singleplayer':
-        return (
-          <GameBoard
-            size={this.state.size}
-            winningLength={this.state.winningLength}
-            gameMode={this.state.gameMode}
-            handleBack={() => this.setState({ gameMode: '' })}
-          />
-        )
-      case 'multiplayer':
-        return (
-          <GameBoard
-            size={this.state.size}
-            winningLength={this.state.winningLength}
-            gameMode={this.state.gameMode}
-            handleBack={() => this.setState({ gameMode: '' })}
-          />
-        )
-      case 'computer':
-        return (
-          <GameBoard
-            size={this.state.size}
-            winningLength={this.state.winningLength}
-            gameMode={this.state.gameMode}
-            handleBack={() => this.setState({ gameMode: '' })}
-          />
-        )
-      case 'options':
-        return (
-          <Options
-            size={this.state.size}
-            winningLength={this.state.winningLength}
-            handleSave={(size, winningLength) => this.setState({ size, winningLength })}
-            handleBack={() => this.setState({ gameMode: '' })}
-          />
-        )
-      default:
-        return (
-          <View style={styles.container}>
-            <Text style={styles.header}>{'X & O'}</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.setState({ gameMode: 'singleplayer' })}
-            >
-              <Text style={styles.text}>Singleplayer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.setState({ gameMode: 'multiplayer' })}
-            >
-              <Text style={styles.text}>Multiplayer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.setState({ gameMode: 'computer' })}
-            >
-              <Text style={styles.text}>Vs Computer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.setState({ gameMode: 'options' })}
-            >
-              <Text style={styles.text}>Options</Text>
-            </TouchableOpacity>
-          </View>
-        )
-    }
+    const { navigate } = this.props.navigation
+    const { size, winningLength } = this.state
+    return (
+      <View style={styles.container}>
+        <Header />
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigate('GameBoard', { size, winningLength, gameMode: 'singleplayer' })}
+        >
+          <Text style={styles.text}>Singleplayer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigate('Multiplayer', { size, winningLength })}
+        >
+          <Text style={styles.text}>Multiplayer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigate('GameBoard', { size, winningLength, gameMode: 'computer' })}
+        >
+          <Text style={styles.text}>Vs Computer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigate('Options', {
+              size,
+              winningLength,
+              handleSave: (size, winningLength) => this.setState({ size, winningLength })
+            })
+          }
+        >
+          <Text style={styles.text}>Options</Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
+}
+
+Menu.propTypes = {
+  navigation: PropTypes.object
 }

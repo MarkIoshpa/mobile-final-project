@@ -9,8 +9,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
-    width: Math.round(Dimensions.get('window').width),
-    backgroundColor: '#202020',
+    width: Math.round(Dimensions.get('window').width) + 1,
+    backgroundColor: '#202020'
   },
   header: {
     color: '#FFFFFF',
@@ -33,13 +33,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row'
   },
   button: {
-    width: 150,
-    height: 70,
+    width: 120,
+    height: 55,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 4,
-    margin: 30
+    margin: 20
+  },
+  botPadStyle: {
+    paddingBottom: 40
+  },
+  textButton: {
+    color: '#000000',
+    fontSize: 24,
+    fontWeight: 'bold'
   }
 })
 
@@ -47,22 +55,24 @@ export default class Options extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      size: this.props.size,
-      winningLength: this.props.winningLength
+      size: this.props.navigation.state.params.size,
+      winningLength: this.props.navigation.state.params.winningLength
     }
 
     this.onPress = this.onPress.bind(this)
   }
 
   onPress(size, winningLength) {
-    this.props.handleSave(size, winningLength)
+    this.props.navigation.state.params.handleSave(size, winningLength)
+    this.props.navigation.navigate('Home')
   }
 
   render() {
+    const { navigate } = this.props.navigation
     return (
       <View style={styles.container}>
         <Text style={styles.header}>{'Options'}</Text>
-        <View style={{ paddingBottom: 40 }}>
+        <View style={styles.botPadStyle}>
           <View style={styles.option}>
             <Text style={styles.text}>Board Size</Text>
             <Text style={styles.text}>{this.state.size}</Text>
@@ -72,7 +82,7 @@ export default class Options extends Component {
             minimumValue={3}
             maximumValue={12}
             step={1}
-            value={this.props.size}
+            value={this.props.navigation.state.params.size}
             onValueChange={size => this.setState({ size })}
           />
           <View style={styles.option}>
@@ -84,7 +94,7 @@ export default class Options extends Component {
             minimumValue={3}
             maximumValue={8}
             step={1}
-            value={this.props.winningLength}
+            value={this.props.navigation.state.params.winningLength}
             onValueChange={winningLength => this.setState({ winningLength })}
           />
         </View>
@@ -93,10 +103,10 @@ export default class Options extends Component {
             style={styles.button}
             onPress={() => this.onPress(this.state.size, this.state.winningLength)}
           >
-            <Text style={{ fontWeight: 'bold', fontSize: 24 }}>Save</Text>
+            <Text style={styles.textButton}>Save</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={this.props.handleBack}>
-            <Text style={{ fontWeight: 'bold', fontSize: 24 }}>Back</Text>
+          <TouchableOpacity style={styles.button} onPress={() => navigate('Home')}>
+            <Text style={styles.textButton}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -105,8 +115,5 @@ export default class Options extends Component {
 }
 
 Options.propTypes = {
-  size: PropTypes.number,
-  winningLength: PropTypes.number,
-  handleBack: PropTypes.func,
-  handleSave: PropTypes.func
+  navigation: PropTypes.object
 }

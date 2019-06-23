@@ -1,21 +1,24 @@
-import React, { Component } from 'react'
-import { StyleSheet, View } from 'react-native'
 import Menu from './components/menu'
+import Options from './components/options'
+import GameBoard from './components/gameBoard'
+import Multiplayer from './components/multiplayer'
+import { createStackNavigator, createAppContainer } from 'react-navigation'
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+const MainNavigator = createStackNavigator(
+  {
+    Home: { screen: Menu },
+    Options: { screen: Options },
+    GameBoard: { screen: GameBoard },
+    Multiplayer: { screen: Multiplayer }
+  },
+  {
+    headerMode: 'none',
+    navigationOptions: {
+      headerVisible: false
+    }
   }
-})
+)
 
-export default class App extends Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Menu />
-      </View>
-    )
-  }
-}
+const AppContainer = createAppContainer(MainNavigator)
+
+export default AppContainer

@@ -5,29 +5,54 @@ import propTypes from 'prop-types'
 const screenWidth = Math.round(Dimensions.get('window').width)
 
 export default class Cell extends Component {
+  cellStyle = (size, x, y, lastMove, winningLine) => {
+    return {
+      width: screenWidth / size - 1,
+      height: screenWidth / size - 1,
+      borderRightWidth: 1,
+      borderBottomWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor:
+        (lastMove[0] === x && lastMove[1] === y) || winningLine.includes(`${x}${y}`)
+          ? '#F0F040'
+          : '#FFFFFF'
+    }
+  }
+
+  lineStyle = size => {
+    return {
+      width: screenWidth / size,
+      height: screenWidth / size,
+      position: 'absolute'
+    }
+  }
+
+  textStyle = (color, size) => {
+    return {
+      color,
+      fontWeight: 'bold',
+      fontSize: screenWidth / size
+    }
+  }
+
   render() {
     return (
       <TouchableOpacity
         onPress={() => this.props.handlePress(this.props.x, this.props.y)}
-        style={{
-          width: screenWidth / this.props.size - 1,
-          height: screenWidth / this.props.size - 1,
-          borderRightWidth: 1,
-          borderBottomWidth: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor:
-            (this.props.lastMove[0] === this.props.x && this.props.lastMove[1] === this.props.y) ||
-            this.props.winningLine.includes(`${this.props.x}${this.props.y}`)
-              ? '#F0F040'
-              : '#FFFFFF'
-        }}
+        style={this.cellStyle(
+          this.props.size,
+          this.props.x,
+          this.props.y,
+          this.props.lastMove,
+          this.props.winningLine
+        )}
       >
         <Text
           style={
             this.props.cellState === 'X'
-              ? { color: 'red', fontWeight: 'bold', fontSize: screenWidth / this.props.size }
-              : { color: 'blue', fontWeight: 'bold', fontSize: screenWidth / this.props.size }
+              ? this.textStyle('red', this.props.size)
+              : this.textStyle('blue', this.props.size)
           }
         >
           {this.props.cellState}
@@ -40,11 +65,7 @@ export default class Cell extends Component {
   renderLine() {
     return (
       <Image
-        style={{
-          width: screenWidth / this.props.size,
-          height: screenWidth / this.props.size,
-          position: 'absolute'
-        }}
+        style={this.lineStyle(this.props.size)}
         source={
           this.props.lineOrientation === 'horizontal'
             ? require('../assets/horizontal-line.png')

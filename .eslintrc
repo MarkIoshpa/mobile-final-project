@@ -23,7 +23,7 @@
         "prettier",
         "prettier/react"
       ],
-      "plugins": ["react", "react-native", "prettier", "jest"],
+      "plugins": ["react", "react-native", "prettier", "jest", "babel"],
       "rules": {
         "prettier/prettier": [
           "error",
@@ -36,7 +36,6 @@
         ],
         "class-methods-use-this": 0,
         "no-invalid-this": 0,
-        "react-native/no-inline-styles": 0,
         "react/prefer-stateless-function": 0,
         "react/no-did-mount-set-state": 0,
         "react/jsx-no-bind": 0,

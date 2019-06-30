@@ -2,28 +2,29 @@ const HUMAN = 'X'
 const COMP = 'O'
 
 function evaluate(gameState, size, winningLength, nextMove, lastMove) {
-  const x = lastMove[0]
-  const y = lastMove[1]
+  const x = parseInt(lastMove[0])
+  const y = parseInt(lastMove[1])
   const nextX = nextMove[0]
   const nextY = nextMove[1]
 
   if (gameOver(gameState, size, winningLength, lastMove)) return Number.MAX_SAFE_INTEGER
 
-  const score1 = evaluateLines(gameState, x, y, size, winningLength, HUMAN)
+  const score1 = evaluateLines(gameState, x, y, size, winningLength, HUMAN, nextX, nextY)
   gameState[nextX][nextY] = COMP
-  const score2 = evaluateLines(gameState, nextX, nextY, size, winningLength, COMP)
+  const score2 = evaluateLines(gameState, nextX, nextY, size, winningLength, COMP, nextX, nextY)
 
-  return Math.max(score1 + 1, score2)
+  return Math.max(score1, score2 + 1)
 }
 
-function evaluateLines(gameState, x, y, size, winningLength, player) {
+function evaluateLines(gameState, x, y, size, winningLength, player, nextX, nextY) {
   let score = 1
   const opponent = player === HUMAN ? COMP : HUMAN
+
   for (let k = 2; k <= winningLength; k++) {
     for (let i = x - k + 1, countMe = 1; i < x + k && i < size; i++) {
       if (i < 0) continue
       if (gameState[i][y] === player) {
-        countMe *= 100 * (1 / k)
+        countMe *= 100
         if (score < countMe) score = countMe
       } else if (gameState[i][y] === opponent) countMe = 1
     }
@@ -31,7 +32,7 @@ function evaluateLines(gameState, x, y, size, winningLength, player) {
     for (let i = y - k + 1, countMe = 1; i < y + k && i < size; i++) {
       if (i < 0) continue
       if (gameState[x][i] === player) {
-        countMe *= 100 * (1 / k)
+        countMe *= 100
         if (score < countMe) score = countMe
       } else if (gameState[i][y] === opponent) countMe = 1
     }
@@ -43,7 +44,7 @@ function evaluateLines(gameState, x, y, size, winningLength, player) {
     ) {
       if (i < 0 || j < 0) continue
       if (gameState[i][j] === player) {
-        countMe *= 101 * (1 / k)
+        countMe *= 101
         if (score < countMe) score = countMe
       } else if (gameState[i][y] === opponent) countMe = 1
     }
@@ -55,10 +56,44 @@ function evaluateLines(gameState, x, y, size, winningLength, player) {
     ) {
       if (i < 0 || j >= size) continue
       if (gameState[i][j] === player) {
-        countMe *= 101 * (1 / k)
+        countMe *= 101
         if (score < countMe) score = countMe
       } else if (gameState[i][y] === opponent) countMe = 1
     }
+  }
+
+  for (let i = -1; i <= 1; i++) {
+    for (let j = -1; j <= 1; j++)
+      if (nextX + i >= 0 && nextX + i < size)
+        if (gameState[nextX + i][nextY + j] === player) score *= 1.1
+  }
+
+  if (player === HUMAN) {
+    if (
+      nextX + 1 < size &&
+      nextX - 1 >= 0 &&
+      gameState[nextX - 1][nextY] === player &&
+      gameState[nextX + 1][nextY] === player &&
+      gameState[nextX][nextY + 1] === player &&
+      gameState[nextX][nextY - 1] === player
+    )
+      score *= 102
+    if (
+      nextX + 1 < size &&
+      nextX - 1 >= 0 &&
+      gameState[nextX - 1][nextY - 1] === player &&
+      gameState[nextX + 1][nextY - 1] === player &&
+      gameState[nextX - 1][nextY + 1] === player &&
+      gameState[nextX + 1][nextY + 1] === player
+    )
+      score *= 102
+  }
+
+  if (player === COMP && size === 3) {
+    if (x === 0 && y === 0) score *= 5
+    if (x === 0 && y === size - 1) score *= 5
+    if (x === size - 1 && y === size - 1) score *= 5
+    if (x === size - 1 && y === 0) score *= 5
   }
 
   return score

@@ -1,5 +1,13 @@
 import React, { Component } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import {
+  Alert,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions
+} from 'react-native'
 import PropTypes from 'prop-types'
 import DialogInput from 'react-native-dialog-input'
 
@@ -102,6 +110,7 @@ export default class Multiplayer extends Component {
       size: this.props.navigation.state.params.size,
       winningLength: this.props.navigation.state.params.winningLength,
       isDialogVisible: false,
+      isCancelled: false,
       games: {}
     }
 
@@ -110,7 +119,7 @@ export default class Multiplayer extends Component {
   }
 
   componentDidMount() {
-    this.fetchGameList()
+    if (!this.state.isCancelled) this.fetchGameList()
   }
 
   fetchGameList() {
@@ -121,7 +130,15 @@ export default class Multiplayer extends Component {
       .then(json => {
         this.setState({ games: json })
       })
-      .catch()
+      .catch(() =>
+        Alert.alert('Network error!', 'Unable to fetch game list.', [{ text: 'OK' }], {
+          cancelable: false
+        })
+      )
+  }
+
+  componentWillUnmount() {
+    this.setState({ isCancelled: true })
   }
 
   renderGame = (game, key) => {

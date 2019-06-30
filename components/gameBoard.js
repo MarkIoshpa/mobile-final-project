@@ -115,6 +115,11 @@ export default class GameBoard extends Component {
         { cancelable: false }
       )
     })
+    this.socket.on('connect_failed', () => {
+      Alert.alert('Connection failed', 'Unable to connect to server!', [{ text: 'Ok' }], {
+        cancelable: false
+      })
+    })
   }
 
   componentDidMount() {

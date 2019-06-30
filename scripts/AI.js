@@ -1,92 +1,184 @@
-/*Code of Minmax here*/
+const HUMAN = 'X'
+const COMP = 'O'
 
-const HUMAN = -1
-const COMP = +1
+function evaluate(gameState, size, winningLength, nextMove, lastMove) {
+  const x = lastMove[0]
+  const y = lastMove[1]
+  const nextX = nextMove[0]
+  const nextY = nextMove[1]
 
-/* Function to heuristic evaluation of state. */
-function evalute(state) {
-  let score = 0
+  if (gameOver(gameState, size, winningLength, lastMove)) return Number.MAX_SAFE_INTEGER
 
-  if (gameOver(state, COMP)) {
-    score = +1
-  } else if (gameOver(state, HUMAN)) {
-    score = -1
-  } else {
-    score = 0
+  const score1 = evaluateLines(gameState, x, y, size, winningLength, HUMAN)
+  gameState[nextX][nextY] = COMP
+  const score2 = evaluateLines(gameState, nextX, nextY, size, winningLength, COMP)
+
+  return Math.max(score1 + 1, score2)
+}
+
+function evaluateLines(gameState, x, y, size, winningLength, player) {
+  let score = 1
+  const opponent = player === HUMAN ? COMP : HUMAN
+  for (let k = 2; k <= winningLength; k++) {
+    for (let i = x - k + 1, countMe = 1; i < x + k && i < size; i++) {
+      if (i < 0) continue
+      if (gameState[i][y] === player) {
+        countMe *= 100 * (1 / k)
+        if (score < countMe) score = countMe
+      } else if (gameState[i][y] === opponent) countMe = 1
+    }
+
+    for (let i = y - k + 1, countMe = 1; i < y + k && i < size; i++) {
+      if (i < 0) continue
+      if (gameState[x][i] === player) {
+        countMe *= 100 * (1 / k)
+        if (score < countMe) score = countMe
+      } else if (gameState[i][y] === opponent) countMe = 1
+    }
+
+    for (
+      let i = x - k + 1, j = y - k + 1, countMe = 1;
+      i < x + k && i < size && j < y + k && j < size;
+      i++, j++
+    ) {
+      if (i < 0 || j < 0) continue
+      if (gameState[i][j] === player) {
+        countMe *= 101 * (1 / k)
+        if (score < countMe) score = countMe
+      } else if (gameState[i][y] === opponent) countMe = 1
+    }
+
+    for (
+      let i = x - k + 1, j = y + k - 1, countMe = 1;
+      i < x + k && i < size && j > y - k && j >= 0;
+      i++, j--
+    ) {
+      if (i < 0 || j >= size) continue
+      if (gameState[i][j] === player) {
+        countMe *= 101 * (1 / k)
+        if (score < countMe) score = countMe
+      } else if (gameState[i][y] === opponent) countMe = 1
+    }
   }
 
   return score
 }
 
-/* This function tests if a specific player wins */
-function gameOver(state, player) {
-  const win_state = [
-    [state[0][0], state[0][1], state[0][2]],
-    [state[1][0], state[1][1], state[1][2]],
-    [state[2][0], state[2][1], state[2][2]],
-    [state[0][0], state[1][0], state[2][0]],
-    [state[0][1], state[1][1], state[2][1]],
-    [state[0][2], state[1][2], state[2][2]],
-    [state[0][0], state[1][1], state[2][2]],
-    [state[2][0], state[1][1], state[0][2]]
-  ]
+export function gameOver(gameState, size, winningLength, lastMove) {
+  const x = lastMove[0]
+  const y = lastMove[1]
+  const player = gameState[x][y]
 
-  for (let i = 0; i < 8; i++) {
-    const line = win_state[i]
-    let filled = 0
-    for (let j = 0; j < 3; j++) {
-      if (line[j] === player) filled++
+  for (
+    let i = x - winningLength + 1, count = 0, line = [];
+    i < x + winningLength && i < size;
+    i++
+  ) {
+    if (i < 0) continue
+    if (gameState[i][y] === player) {
+      count += 1
+      line.push(`${i}${y}`)
+    } else {
+      count = 0
+      line = []
     }
-    if (filled === 3) return true
+    if (count === winningLength) {
+      return { winningLine: line, lineOrientation: 'vertical' }
+    }
+  }
+
+  for (
+    let i = y - winningLength + 1, count = 0, line = [];
+    i < y + winningLength && i < size;
+    i++
+  ) {
+    if (i < 0) continue
+    if (gameState[x][i] === player) {
+      count += 1
+      line.push(`${x}${i}`)
+    } else {
+      count = 0
+      line = []
+    }
+    if (count === winningLength) {
+      return { winningLine: line, lineOrientation: 'horizontal' }
+    }
+  }
+
+  for (
+    let i = x - winningLength + 1, j = y - winningLength + 1, count = 0, line = [];
+    i < x + winningLength && i < size && j < y + winningLength && j < size;
+    i++, j++
+  ) {
+    if (i < 0 || j < 0) continue
+    if (gameState[i][j] === player) {
+      count += 1
+      line.push(`${i}${j}`)
+    } else {
+      count = 0
+      line = []
+    }
+    if (count === winningLength) {
+      return { winningLine: line, lineOrientation: 'diagonal' }
+    }
+  }
+
+  for (
+    let i = x - winningLength + 1, j = y + winningLength - 1, count = 0, line = [];
+    i < x + winningLength && i < size && j > y - winningLength && j >= 0;
+    i++, j--
+  ) {
+    if (i < 0 || j >= size) continue
+    if (gameState[i][j] === player) {
+      count += 1
+      line.push(`${i}${j}`)
+    } else {
+      count = 0
+      line = []
+    }
+    if (count === winningLength) {
+      return { winningLine: line, lineOrientation: 'diagonalback' }
+    }
   }
   return false
 }
 
-/* This function test if the human or computer wins */
-function gameOverAll(state) {
-  return gameOver(state, HUMAN) || gameOver(state, COMP)
-}
-
-function emptyCells(state) {
+function emptyCells(state, size) {
   const cells = []
-  for (let x = 0; x < 3; x++) {
-    for (let y = 0; y < 3; y++) {
-      if (state[x][y] === 0) cells.push([x, y])
+  for (let x = 0; x < size; x++) {
+    for (let y = 0; y < size; y++) {
+      if (!state[x][y]) cells.push([x, y])
     }
   }
 
   return cells
 }
 
-/* *** AI function that choice the best move *** */
+export function computer(state, size, winningLength, lastMove) {
+  let best = [-1, -1, Number.MIN_SAFE_INTEGER]
 
-export default function minimax(state, depth, player) {
-  let best
-
-  if (player === COMP) {
-    best = [-1, -1, -1000]
-  } else {
-    best = [-1, -1, +1000]
-  }
-
-  if (depth === 0 || gameOverAll(state)) {
-    const score = evalute(state)
-    return [-1, -1, score]
-  }
-
-  emptyCells(state).forEach(function(cell) {
+  emptyCells(state, size).forEach(function(cell) {
     const x = cell[0]
     const y = cell[1]
-    state[x][y] = player
-    const score = minimax(state, depth - 1, -player)
-    state[x][y] = 0
+    state[x][y] = COMP
+    if (gameOver(state, size, winningLength, [x, y])) {
+      state[x][y] = null
+      best = [x, y]
+      return
+    }
+    state[x][y] = HUMAN
+    const score = [-1, -1, evaluate(state, size, winningLength, [x, y], lastMove)]
+    state[x][y] = null
     score[0] = x
     score[1] = y
 
-    if (player === COMP) {
-      if (score[2] > best[2]) best = score
-    } else if (score[2] < best[2]) best = score
+    if (score[2] > best[2]) best = score
   })
+
+  if (best[0] === -1) {
+    best[0] = emptyCells(state, size)[0][0]
+    best[1] = emptyCells(state, size)[0][1]
+  }
 
   return best
 }

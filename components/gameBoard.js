@@ -5,7 +5,7 @@ import propTypes from 'prop-types'
 import update from 'immutability-helper'
 import Header from './header'
 import Cell from './cell'
-import Minimax from '../scripts/AI'
+import { computer, gameOver } from '../scripts/AI'
 
 const styles = StyleSheet.create({
   container: {
@@ -205,16 +205,9 @@ export default class GameBoard extends Component {
   }
 
   computerMove() {
-    const { gameState, size } = this.state
-    const compState = this.create2DArray(size)
+    const { gameState, size, winningLength, lastMove } = this.state
 
-    for (let x = 0; x < size; x++)
-      for (let y = 0; y < size; y++)
-        if (gameState[x][y] === 'X') compState[x][y] = -1
-        else if (gameState[x][y] === 'O') compState[x][y] = 1
-        else compState[x][y] = 0
-
-    const move = Minimax(compState, size, 1)
+    const move = computer(gameState, size, winningLength, lastMove)
     const x = move[0]
     const y = move[1]
 
@@ -252,87 +245,12 @@ export default class GameBoard extends Component {
   }
 
   checkVictory() {
-    const x = this.state.lastMove[0]
-    const y = this.state.lastMove[1]
-    const symbol = this.state.gameState[x][y]
-    const { size, winningLength } = this.state
-
-    for (
-      let i = x - winningLength + 1, count = 0, line = [];
-      i < x + winningLength && i < size;
-      i++
-    ) {
-      if (i < 0) continue
-      if (this.state.gameState[i][y] === symbol) {
-        count += 1
-        line.push(`${i}${y}`)
-      } else {
-        count = 0
-        line = []
-      }
-      if (count === winningLength) {
-        this.setState({ winningLine: line, lineOrientation: 'vertical' })
-        return true
-      }
+    const { gameState, size, winningLength, lastMove } = this.state
+    const result = gameOver(gameState, size, winningLength, lastMove)
+    if (result) {
+      this.setState({ winningLine: result.winningLine, lineOrientation: result.lineOrientation })
+      return true
     }
-
-    for (
-      let i = y - winningLength + 1, count = 0, line = [];
-      i < y + winningLength && i < size;
-      i++
-    ) {
-      if (i < 0) continue
-      if (this.state.gameState[x][i] === symbol) {
-        count += 1
-        line.push(`${x}${i}`)
-      } else {
-        count = 0
-        line = []
-      }
-      if (count === winningLength) {
-        this.setState({ winningLine: line, lineOrientation: 'horizontal' })
-        return true
-      }
-    }
-
-    for (
-      let i = x - winningLength + 1, j = y - winningLength + 1, count = 0, line = [];
-      i < x + winningLength && i < size && j < y + winningLength && j < size;
-      i++, j++
-    ) {
-      if (i < 0 || j < 0) continue
-      if (this.state.gameState[i][j] === symbol) {
-        count += 1
-        line.push(`${i}${j}`)
-      } else {
-        count = 0
-        line = []
-      }
-      if (count === winningLength) {
-        this.setState({ winningLine: line, lineOrientation: 'diagonal' })
-        return true
-      }
-    }
-
-    for (
-      let i = x - winningLength + 1, j = y + winningLength - 1, count = 0, line = [];
-      i < x + winningLength && i < size && j > y - winningLength && j >= 0;
-      i++, j--
-    ) {
-      if (i < 0 || j >= size) continue
-      if (this.state.gameState[i][j] === symbol) {
-        count += 1
-        line.push(`${i}${j}`)
-      } else {
-        count = 0
-        line = []
-      }
-      if (count === winningLength) {
-        this.setState({ winningLine: line, lineOrientation: 'diagonalback' })
-        return true
-      }
-    }
-
     return false
   }
 

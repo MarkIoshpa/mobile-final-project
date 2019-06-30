@@ -63,7 +63,9 @@ export default class Options extends Component {
   }
 
   onPress(size, winningLength) {
-    this.props.navigation.state.params.handleSave(size, winningLength)
+    let wl = winningLength
+    if (winningLength > size) wl = size
+    this.props.navigation.state.params.handleSave(size, wl)
     this.props.navigation.navigate('Home')
   }
 
